@@ -1,0 +1,11 @@
+{
+  "workflowid": "8b4c1d3f-2222-4333-9444-fedcba654321",
+  "name": "Daily Order Digest",
+  "statecode": 1,
+  "category": 5,
+  "modifiedon": "2026-07-20T08:00:00Z",
+  "description": "Every morning, email today's orders to the sales team.",
+  "clientdataiscompressed": true,
+  "connectionreferences": "{\"connectionReferences\":{\"contoso_sharedcommondataserviceforapps_1a2b3\":{\"apiId\":\"/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps\",\"connectionName\":\"<redacted-instance>\"}}}",
+  "clientdata": "H4sIADRUcWoC/51TUW/TMBD+K5GZNJBosnZiwJ5WbTwg0QnRiQcQim72ufFofJ7trApV/ztnp+00KBKalQf7/N19n7/LrYVCbayJhqw4L9biKMgGW+C9aGJ04byqhkjZgoUFtmhjCb86j6WktlqR/6mXtArV5GR8Njrhb7wPPpYu7wLZF+J1IaI3iwX6kMmuwCz72qPsvEcrMQdj79JGfHkMc56xrotD1h947fG+41Ofkq6gH9AR/QMsOTROpKbFb2Rz2cvGWCjmEawCr4obvhIbXgwDmbQOJJ9MiHUkBX2oyaud4p24qTOXZC3mjMToOzvVTJpQm6d6Gwoxb+Q+4xraXIYjkQLVoQGPig1tiWVFCKzeSNTkwblQj2Fye5pYyKGHVOCjSulJJNvE+kK6BWeGeOU8PZgkupoZ6ZlBx/IzrdBPuVzFuFANlPW/OEV6hAPPQuPu8dx6E/u/tMMSQ7YoaTjSZjnYsAfkO2bAAu+Li3UX5TWtXh73vEaz2Uip41cbMXRgjlbVyixw69h/2X24V9/FvJMSUaESP57bEdKaLTk9e1O/1+/w7YEWJMUfWv6Pv06e24I9yUHPU+0ZhsCzV91QKp0NH0WE9mKrNo1iYn8Cnne3d/y2YSp4zopsTbF1d5PXbzAPXev/AwAA"
+}

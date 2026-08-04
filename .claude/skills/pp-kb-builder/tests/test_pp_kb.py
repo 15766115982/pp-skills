@@ -21,6 +21,8 @@ sys.path.insert(0, SCRIPTS)
 
 import pp_common as pp  # noqa: E402
 import export_metadata as em  # noqa: E402
+import export_flows as ef  # noqa: E402
+import parse_flows as pf  # noqa: E402
 
 
 def dircmp_exact(a: str, b: str) -> list:
@@ -107,12 +109,15 @@ class TestGoldenFiles(unittest.TestCase):
             cfg_path = os.path.join(tmp, "pp-kb.config.json")
             with open(cfg_path, "w", encoding="utf-8") as f:
                 json.dump({"outputDir": kb, "labelLanguage": 1033}, f)
-            r = subprocess.run(
-                [sys.executable, os.path.join(SCRIPTS, "parse_metadata.py"), "--config", cfg_path],
-                capture_output=True, text=True, cwd=SKILL_DIR)
-            self.assertEqual(r.returncode, 0, msg=r.stderr)
+            for script in ("parse_metadata.py", "parse_flows.py"):
+                r = subprocess.run(
+                    [sys.executable, os.path.join(SCRIPTS, script), "--config", cfg_path],
+                    capture_output=True, text=True, cwd=SKILL_DIR)
+                self.assertEqual(r.returncode, 0, msg=f"{script}: {r.stderr}")
             diffs = dircmp_exact(os.path.join(kb, "dataverse"),
                                  os.path.join(GOLDEN, "kb", "dataverse"))
+            diffs += dircmp_exact(os.path.join(kb, "flows"),
+                                  os.path.join(GOLDEN, "kb", "flows"))
             self.assertEqual(diffs, [], msg="\n".join(diffs))
 
     def test_rebuild_is_idempotent(self):
@@ -152,6 +157,68 @@ class TestRedactionScanIntegration(unittest.TestCase):
                 capture_output=True, text=True, cwd=SKILL_DIR)
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("redaction scan FAILED", r.stderr)
+
+
+class TestFlows(unittest.TestCase):
+    def _load_fixture(self, name):
+        with open(os.path.join(FIXTURES, "_raw", "flows", name), encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_decompress_gzip_clientdata(self):
+        rec = self._load_fixture("8b4c1d3f-2222-4333-9444-fedcba654321.json")
+        self.assertTrue(rec["clientdataiscompressed"])
+        text = ef.decompress_clientdata(rec)
+        obj = json.loads(text)
+        self.assertIn("definition", obj)
+        self.assertIn("Daily_recurrence", obj["definition"]["triggers"])
+
+    def test_decompress_passthrough_when_uncompressed(self):
+        rec = self._load_fixture("7f3a9c2e-1111-4222-8333-abcdef012345.json")
+        self.assertEqual(ef.decompress_clientdata(rec), rec["clientdata"])
+
+    def test_sanitize_flow_record_strips_embedded_secrets(self):
+        rec = {
+            "workflowid": "w1", "name": "Leak Test", "clientdataiscompressed": False,
+            "clientdata": json.dumps({
+                "connectionReferences": {"r1": {"apiId": "/apis/x",
+                                                "$authentication": {"value": "secret-xyz"}}},
+                "definition": {"triggers": {}, "actions": {}}}),
+            "connectionreferences": json.dumps({"connectionReferences": {
+                "r1": {"apiId": "/apis/x", "connectionName": "7f3a9c2e-real-guid", "id": "/conn/real"}}}),
+        }
+        clean, findings = ef.sanitize_flow_record(rec)
+        cd = json.loads(clean["clientdata"])
+        self.assertNotIn("$authentication", cd["connectionReferences"]["r1"])
+        cr = json.loads(clean["connectionreferences"])
+        self.assertEqual(cr["connectionReferences"]["r1"]["connectionName"], "<redacted-instance>")
+        self.assertNotIn("real-guid", json.dumps(clean))
+        self.assertGreaterEqual(len(findings), 2)
+
+    def test_flow_wildcard_matching(self):
+        records = [{"name": "Contoso Order Approval", "workflowid": "1"},
+                   {"name": "Daily Order Digest", "workflowid": "2"},
+                   {"name": "Invoice Sync", "workflowid": "3"}]
+        matched, warnings = ef.match_flows(records, ["*order*"])
+        self.assertEqual({r["workflowid"] for r in matched}, {"1", "2"})
+        matched, warnings = ef.match_flows(records, ["Nothing*"])
+        self.assertEqual(matched, [])
+        self.assertEqual(len(warnings), 1)
+
+    def test_runafter_graph_extraction(self):
+        rec = self._load_fixture("7f3a9c2e-1111-4222-8333-abcdef012345.json")
+        cd = json.loads(ef.decompress_clientdata(rec))
+        rows, edges = [], []
+        pf.walk_actions(cd["definition"]["actions"], rows, edges)
+        by_name = {r["name"]: r for r in rows}
+        self.assertEqual(len(rows), 5)
+        self.assertEqual(by_name["Check_total_amount"]["type"], "If")
+        self.assertEqual(by_name["Update_status_approved"]["branch"], "true")
+        self.assertEqual(by_name["Send_approval_email"]["branch"], "false")
+        graph = pf.build_graph("When_a_row_is_created", rows)
+        self.assertIn('Check_total_amount{"Check_total_amount"}', graph)
+        self.assertIn('Check_total_amount -- "true" --> Update_status_approved', graph)
+        self.assertIn('Check_total_amount -- "false" --> Send_approval_email', graph)
+        self.assertIn("Get_order_lines --> Check_total_amount", graph)
 
 
 if __name__ == "__main__":

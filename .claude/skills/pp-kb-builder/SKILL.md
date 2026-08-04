@@ -35,7 +35,10 @@ and Canvas App sources (`.pa.yaml`, read-only from a local source tree).
 python .claude/skills/pp-kb-builder/scripts/export_metadata.py
 python .claude/skills/pp-kb-builder/scripts/parse_metadata.py
 
-# phase 2 — Power Automate flows (export_flows.py / parse_flows.py)  [planned]
+# phase 2 — Power Automate flows (implemented)
+python .claude/skills/pp-kb-builder/scripts/export_flows.py
+python .claude/skills/pp-kb-builder/scripts/parse_flows.py
+
 # phase 3 — Canvas apps (parse_canvas.py)                            [planned]
 # phase 4 — cross references + index (build_crossrefs.py, build_index.py) [planned]
 ```

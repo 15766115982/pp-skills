@@ -1,0 +1,14 @@
+{
+  "capturedAt": "2026-08-04T09:31:00+00:00",
+  "environment": "org12345.crm5.dynamics.com",
+  "filters": {
+    "solutions": [
+      "ContosoSales"
+    ]
+  },
+  "flows": [
+    "Contoso Order Approval",
+    "Daily Order Digest"
+  ],
+  "note": "Synthetic fixture for tests. Not real environment data."
+}
