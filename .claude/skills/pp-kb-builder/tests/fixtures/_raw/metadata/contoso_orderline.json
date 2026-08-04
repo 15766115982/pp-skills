@@ -1,0 +1,40 @@
+{
+  "LogicalName": "contoso_orderline",
+  "DisplayName": {"LocalizedLabels": [{"Label": "Order Line", "LanguageCode": 1033}]},
+  "SchemaName": "contoso_OrderLine",
+  "EntitySetName": "contoso_orderlines",
+  "PrimaryIdAttribute": "contoso_orderlineid",
+  "PrimaryNameAttribute": "contoso_name",
+  "OwnershipType": "UserOwned",
+  "Attributes": [
+    {"LogicalName": "contoso_orderlineid", "AttributeType": "Uniqueidentifier", "IsPrimaryId": true,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Order Line ID", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "SystemRequired"}},
+    {"LogicalName": "contoso_name", "AttributeType": "String", "MaxLength": 100, "IsPrimaryName": true,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Line Description", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "None"}},
+    {"LogicalName": "contoso_salesorder", "AttributeType": "Lookup", "Targets": ["contoso_salesorder"],
+     "DisplayName": {"LocalizedLabels": [{"Label": "Sales Order", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "ApplicationRequired"}},
+    {"LogicalName": "contoso_product", "AttributeType": "Lookup", "Targets": ["product"],
+     "DisplayName": {"LocalizedLabels": [{"Label": "Product", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "None"}},
+    {"LogicalName": "contoso_quantity", "AttributeType": "Integer", "MinValue": 1, "MaxValue": 10000,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Quantity", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "ApplicationRequired"}},
+    {"LogicalName": "contoso_unitprice", "AttributeType": "Money", "Precision": 2,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Unit Price", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "None"}}
+  ],
+  "OneToManyRelationships": [],
+  "ManyToOneRelationships": [
+    {"SchemaName": "contoso_salesorder_orderline", "ReferencedEntity": "contoso_salesorder",
+     "ReferencingEntity": "contoso_orderline", "ReferencingAttribute": "contoso_salesorder"},
+    {"SchemaName": "contoso_orderline_product", "ReferencedEntity": "product",
+     "ReferencingEntity": "contoso_orderline", "ReferencingAttribute": "contoso_product"}
+  ],
+  "ManyToManyRelationships": [
+    {"SchemaName": "contoso_orderline_tag", "Entity1LogicalName": "contoso_orderline",
+     "Entity2LogicalName": "contoso_tag", "IntersectTableName": "contoso_orderline_tag"}
+  ]
+}

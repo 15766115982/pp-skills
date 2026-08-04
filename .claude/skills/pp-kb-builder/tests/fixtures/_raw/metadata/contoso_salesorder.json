@@ -1,0 +1,61 @@
+{
+  "LogicalName": "contoso_salesorder",
+  "DisplayName": {"LocalizedLabels": [{"Label": "Sales Order", "LanguageCode": 1033}]},
+  "SchemaName": "contoso_SalesOrder",
+  "EntitySetName": "contoso_salesorders",
+  "PrimaryIdAttribute": "contoso_salesorderid",
+  "PrimaryNameAttribute": "contoso_name",
+  "OwnershipType": "UserOwned",
+  "Attributes": [
+    {"LogicalName": "contoso_salesorderid", "AttributeType": "Uniqueidentifier", "IsPrimaryId": true,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Sales Order ID", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "SystemRequired"}},
+    {"LogicalName": "contoso_name", "AttributeType": "String", "MaxLength": 64, "IsPrimaryName": true,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Order Number", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "ApplicationRequired"}},
+    {"LogicalName": "contoso_customer", "AttributeType": "Lookup", "Targets": ["account"],
+     "DisplayName": {"LocalizedLabels": [{"Label": "Customer", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "ApplicationRequired"}},
+    {"LogicalName": "contoso_orderdate", "AttributeType": "DateTime", "DateTimeBehavior": {"Value": "DateOnly"},
+     "DisplayName": {"LocalizedLabels": [{"Label": "Order Date", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "ApplicationRequired"}},
+    {"LogicalName": "contoso_status", "AttributeType": "Picklist",
+     "DisplayName": {"LocalizedLabels": [{"Label": "Status", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "ApplicationRequired"},
+     "OptionSet": {"IsGlobal": false, "Options": [
+       {"Value": 100000000, "Label": {"LocalizedLabels": [{"Label": "Draft", "LanguageCode": 1033}]}},
+       {"Value": 100000001, "Label": {"LocalizedLabels": [{"Label": "Submitted", "LanguageCode": 1033}]}},
+       {"Value": 100000002, "Label": {"LocalizedLabels": [{"Label": "Approved", "LanguageCode": 1033}]}},
+       {"Value": 100000003, "Label": {"LocalizedLabels": [{"Label": "Rejected", "LanguageCode": 1033}]}}
+     ]}},
+    {"LogicalName": "contoso_totalamount", "AttributeType": "Money", "Precision": 2, "MinValue": 0.0,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Total Amount", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "None"}},
+    {"LogicalName": "contoso_notes", "AttributeType": "Memo", "MaxLength": 2000,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Notes", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "None"}},
+    {"LogicalName": "contoso_priority", "AttributeType": "Integer", "MinValue": 1, "MaxValue": 5,
+     "DisplayName": {"LocalizedLabels": [{"Label": "Priority", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "None"}},
+    {"LogicalName": "contoso_isrush", "AttributeType": "Boolean",
+     "DisplayName": {"LocalizedLabels": [{"Label": "Rush Order", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "None"}},
+    {"LogicalName": "statecode", "AttributeType": "State",
+     "DisplayName": {"LocalizedLabels": [{"Label": "Status", "LanguageCode": 1033}]},
+     "RequiredLevel": {"Value": "SystemRequired"},
+     "OptionSet": {"IsGlobal": false, "Options": [
+       {"Value": 0, "Label": {"LocalizedLabels": [{"Label": "Active", "LanguageCode": 1033}]}},
+       {"Value": 1, "Label": {"LocalizedLabels": [{"Label": "Inactive", "LanguageCode": 1033}]}}
+     ]}}
+  ],
+  "OneToManyRelationships": [
+    {"SchemaName": "contoso_salesorder_orderline", "ReferencedEntity": "contoso_salesorder",
+     "ReferencingEntity": "contoso_orderline", "ReferencingAttribute": "contoso_salesorder",
+     "CascadeConfiguration": {"Delete": "Cascade"}}
+  ],
+  "ManyToOneRelationships": [
+    {"SchemaName": "contoso_salesorder_customer", "ReferencedEntity": "account",
+     "ReferencingEntity": "contoso_salesorder", "ReferencingAttribute": "contoso_customer"}
+  ],
+  "ManyToManyRelationships": []
+}

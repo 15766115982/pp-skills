@@ -1,0 +1,8 @@
+{
+  "capturedAt": "2026-08-04T09:31:00+00:00",
+  "environment": "org12345.crm5.dynamics.com",
+  "labelLanguage": 1033,
+  "filters": {"solutions": ["ContosoSales"]},
+  "tables": ["contoso_orderline", "contoso_salesorder"],
+  "note": "Synthetic fixture for tests. Not real environment data."
+}
