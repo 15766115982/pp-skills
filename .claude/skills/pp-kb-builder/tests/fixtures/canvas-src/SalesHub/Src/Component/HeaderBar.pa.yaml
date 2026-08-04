@@ -1,0 +1,15 @@
+ComponentDefinitions:
+  HeaderBar:
+    CustomProperties:
+      Title:
+        DataType: String
+        Default: ="App"
+    Properties:
+      Height: =64
+      Fill: =RGBA(32, 32, 32, 1)
+    Children:
+      - lblTitle:
+          Control: Label
+          Properties:
+            Text: =HeaderBar.Title
+            Color: =RGBA(255, 255, 255, 1)

@@ -1,0 +1,47 @@
+Screens:
+  OrderListScreen:
+    Properties:
+      Fill: =RGBA(245, 245, 245, 1)
+      OnVisible: =Refresh('Sales Orders')
+    Children:
+      - hdrMain:
+          Control: Component
+          Variant: HeaderBar
+          Properties:
+            Title: ="Orders"
+      - galOrders:
+          Control: Gallery
+          Variant: Vertical
+          Properties:
+            Items: |
+              =Filter(colOrders,
+                  ddStatus.Selected.Value = "All" ||
+                  Text(contoso_status) = ddStatus.Selected.Value)
+            Layout: =Layout.Vertical
+          Children:
+            - lblOrderNumber:
+                Control: Label
+                Properties:
+                  Text: =ThisItem.contoso_name
+                  X: =10
+                  Y: =10
+            - lblStatus:
+                Control: Label
+                Properties:
+                  Text: =Text(ThisItem.contoso_status)
+                  Fill: =If(ThisItem.contoso_status = 'contoso_status'.Approved, Color.Green, Color.Gray)
+            - icoNext:
+                Control: Icon
+                Variant: ChevronRight
+                Properties:
+                  OnSelect: '=Navigate(OrderDetailScreen, ScreenTransition.Fade, {selectedOrder: ThisItem})'
+      - ddStatus:
+          Control: Dropdown
+          Properties:
+            Items: =["All", "Draft", "Submitted", "Approved", "Rejected"]
+            Default: ="All"
+      - btnRefresh:
+          Control: Button
+          Properties:
+            Text: ="Refresh"
+            OnSelect: =ClearCollect(colOrders, SortByColumns('Sales Orders', "contoso_orderdate", Descending))

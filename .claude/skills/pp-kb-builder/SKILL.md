@@ -39,7 +39,9 @@ python .claude/skills/pp-kb-builder/scripts/parse_metadata.py
 python .claude/skills/pp-kb-builder/scripts/export_flows.py
 python .claude/skills/pp-kb-builder/scripts/parse_flows.py
 
-# phase 3 — Canvas apps (parse_canvas.py)                            [planned]
+# phase 3 — Canvas apps (implemented)
+python .claude/skills/pp-kb-builder/scripts/parse_canvas.py
+
 # phase 4 — cross references + index (build_crossrefs.py, build_index.py) [planned]
 ```
 

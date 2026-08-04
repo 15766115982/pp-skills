@@ -1,0 +1,31 @@
+Screens:
+  OrderDetailScreen:
+    Properties:
+      Fill: =RGBA(255, 255, 255, 1)
+    Children:
+      - frmOrder:
+          Control: Form
+          Variant: Edit
+          Properties:
+            DataSource: ='Sales Orders'
+            Item: =selectedOrder
+          Children:
+            - txtNotes:
+                Control: TextInput
+                Properties:
+                  Default: =selectedOrder.contoso_notes
+                  MaxLength: =2000
+      - btnSubmit:
+          Control: Button
+          Properties:
+            Text: ="Submit for approval"
+            OnSelect: |-
+              =Patch('Sales Orders', selectedOrder,
+                  {contoso_status: 'contoso_status'.Submitted,
+                   contoso_notes: txtNotes.Text});
+              Notify("Submitted", NotificationType.Success)
+      - btnBack:
+          Control: Button
+          Properties:
+            Text: ="Back"
+            OnSelect: =Back()

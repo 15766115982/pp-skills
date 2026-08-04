@@ -1,0 +1,28 @@
+App:
+  Properties:
+    StartScreen: =OrderListScreen
+    BackEnabled: =false
+    OnStart: |
+      =ClearCollect(colOrders, SortByColumns('Sales Orders', "contoso_orderdate", Descending));
+      Set(varCurrentUser, User().Email)
+
+DataSources:
+  Sales Orders:
+    Type: Table
+    Parameters:
+      TableLogicalName: contoso_salesorder
+  Order Lines:
+    Type: Table
+    Parameters:
+      TableLogicalName: contoso_orderline
+  Office365Outlook:
+    Type: Actions
+    ConnectorId: shared_office365
+
+EditorState:
+  ScreensOrder:
+    - OrderListScreen
+    - OrderDetailScreen
+    - SettingsScreen
+  ComponentDefinitionsOrder:
+    - HeaderBar

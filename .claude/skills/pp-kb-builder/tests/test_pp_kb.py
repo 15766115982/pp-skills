@@ -23,6 +23,9 @@ import pp_common as pp  # noqa: E402
 import export_metadata as em  # noqa: E402
 import export_flows as ef  # noqa: E402
 import parse_flows as pf  # noqa: E402
+import parse_canvas as pc  # noqa: E402
+
+CANVAS_FIXTURE = os.path.join(FIXTURES, "canvas-src")
 
 
 def dircmp_exact(a: str, b: str) -> list:
@@ -108,17 +111,18 @@ class TestGoldenFiles(unittest.TestCase):
             shutil.copytree(os.path.join(FIXTURES, "_raw"), os.path.join(kb, "_raw"))
             cfg_path = os.path.join(tmp, "pp-kb.config.json")
             with open(cfg_path, "w", encoding="utf-8") as f:
-                json.dump({"outputDir": kb, "labelLanguage": 1033}, f)
-            for script in ("parse_metadata.py", "parse_flows.py"):
+                json.dump({"outputDir": kb, "labelLanguage": 1033,
+                           "canvasSourcePath": CANVAS_FIXTURE,
+                           "filters": {"screens": ["Order*"]}}, f)
+            for script in ("parse_metadata.py", "parse_flows.py", "parse_canvas.py"):
+                env = dict(os.environ, PP_CANVAS_COMMIT="testcommit")
                 r = subprocess.run(
                     [sys.executable, os.path.join(SCRIPTS, script), "--config", cfg_path],
-                    capture_output=True, text=True, cwd=SKILL_DIR)
+                    capture_output=True, text=True, cwd=SKILL_DIR, env=env)
                 self.assertEqual(r.returncode, 0, msg=f"{script}: {r.stderr}")
-            diffs = dircmp_exact(os.path.join(kb, "dataverse"),
-                                 os.path.join(GOLDEN, "kb", "dataverse"))
-            diffs += dircmp_exact(os.path.join(kb, "flows"),
-                                  os.path.join(GOLDEN, "kb", "flows"))
-            self.assertEqual(diffs, [], msg="\n".join(diffs))
+            for sub in ("dataverse", "flows", "apps"):
+                diffs = dircmp_exact(os.path.join(kb, sub), os.path.join(GOLDEN, "kb", sub))
+                self.assertEqual(diffs, [], msg=f"{sub}:\n" + "\n".join(diffs))
 
     def test_rebuild_is_idempotent(self):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(FIXTURES)) as tmp:
@@ -219,6 +223,44 @@ class TestFlows(unittest.TestCase):
         self.assertIn('Check_total_amount -- "true" --> Update_status_approved', graph)
         self.assertIn('Check_total_amount -- "false" --> Send_approval_email', graph)
         self.assertIn("Get_order_lines --> Check_total_amount", graph)
+
+
+class TestCanvas(unittest.TestCase):
+    def test_yaml_loader_no_bool_coercion(self):
+        import yaml
+        doc = yaml.load("a: On\nb: off\nc: yes\nd: =false\n", Loader=pc.PaLoader)
+        self.assertEqual(doc["a"], "On")      # not True
+        self.assertEqual(doc["b"], "off")     # not False
+        self.assertEqual(doc["c"], "yes")
+        self.assertEqual(doc["d"], "=false")  # formula untouched
+
+    def test_merge_and_provenance(self):
+        merged, provenance = pc.load_app(os.path.join(CANVAS_FIXTURE, "SalesHub", "Src"))
+        self.assertEqual(set(merged["Screens"]),
+                         {"OrderListScreen", "OrderDetailScreen", "SettingsScreen"})
+        self.assertIn("HeaderBar", merged["ComponentDefinitions"])
+        self.assertEqual(merged["DataSources"]["Sales Orders"]["Parameters"]["TableLogicalName"],
+                         "contoso_salesorder")
+        self.assertTrue(provenance[("Screens", "OrderListScreen")].endswith("OrderListScreen.pa.yaml"))
+
+    def test_control_tree_and_formulas(self):
+        merged, _ = pc.load_app(os.path.join(CANVAS_FIXTURE, "SalesHub", "Src"))
+        rows = pc.screen_rows(merged["Screens"]["OrderListScreen"])
+        self.assertEqual(len(rows), 7)
+        by_name = {r["name"]: r for r in rows}
+        self.assertEqual(by_name["lblOrderNumber"]["depth"], 1)
+        self.assertEqual(by_name["galOrders"]["type"], "Gallery")
+        fx = pc.formulas_of(rows, "OrderListScreen")
+        nav = pc.nav_edges(fx)
+        self.assertEqual({t for _c, _p, t in nav}, {"OrderDetailScreen"})
+        self.assertIn("colOrders", pc.collection_names(fx))
+        self.assertIn("Sales Orders", pc.table_refs(fx, set(merged["DataSources"])))
+
+    def test_two_tier_screen_matching(self):
+        names = ["OrderListScreen", "OrderDetailScreen", "SettingsScreen"]
+        self.assertEqual(pc.match_screens(names, ["Order*"]),
+                         {"OrderListScreen", "OrderDetailScreen"})
+        self.assertEqual(pc.match_screens(names, []), set(names))  # no filter = all full
 
 
 if __name__ == "__main__":
