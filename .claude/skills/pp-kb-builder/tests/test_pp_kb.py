@@ -316,5 +316,38 @@ class TestCrossrefs(unittest.TestCase):
             self.assertTrue(text.endswith("*Snapshot: x*\n"))
 
 
+class TestConfig(unittest.TestCase):
+    def test_pythonpath_default_and_env_override(self):
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(FIXTURES)) as tmp:
+            cfg_file = os.path.join(tmp, "pp-kb.config.json")
+            with open(cfg_file, "w", encoding="utf-8") as f:
+                json.dump({"outputDir": tmp}, f)
+            old = os.environ.pop("PP_PYTHON", None)
+            try:
+                cfg = pp.load_config(cfg_file)
+                self.assertEqual(cfg["pythonPath"], "python")  # default
+                os.environ["PP_PYTHON"] = "py -3.11"
+                cfg = pp.load_config(cfg_file)
+                self.assertEqual(cfg["pythonPath"], "py -3.11")  # env wins
+            finally:
+                if old is None:
+                    os.environ.pop("PP_PYTHON", None)
+                else:
+                    os.environ["PP_PYTHON"] = old
+
+    def test_config_file_pythonpath(self):
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(FIXTURES)) as tmp:
+            cfg_file = os.path.join(tmp, "pp-kb.config.json")
+            with open(cfg_file, "w", encoding="utf-8") as f:
+                json.dump({"pythonPath": "C:/venvs/ppkb/Scripts/python.exe"}, f)
+            old = os.environ.pop("PP_PYTHON", None)
+            try:
+                self.assertEqual(pp.load_config(cfg_file)["pythonPath"],
+                                 "C:/venvs/ppkb/Scripts/python.exe")
+            finally:
+                if old is not None:
+                    os.environ["PP_PYTHON"] = old
+
+
 if __name__ == "__main__":
     unittest.main()

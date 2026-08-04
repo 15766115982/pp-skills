@@ -1,4 +1,5 @@
 {
+  "pythonPath": "python",
   "dataverseUrl": "https://org12345.crm5.dynamics.com",
   "labelLanguage": 1033,
   "canvasSourcePath": "./canvas-src",

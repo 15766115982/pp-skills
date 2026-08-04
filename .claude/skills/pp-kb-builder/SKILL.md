@@ -23,26 +23,36 @@ and Canvas App sources (`.pa.yaml`, read-only from a local source tree).
 
 ## Prerequisites
 
-- Python >= 3.10 with `pyyaml` (`pip install pyyaml`)
+- Python >= 3.10 with `pyyaml`, interpreter chosen during setup and recorded as
+  `pythonPath` in the config (env override: `PP_PYTHON`)
 - Env vars: `PP_TENANT_ID`, `PP_CLIENT_ID`, `PP_CLIENT_SECRET`, `PP_DATAVERSE_URL`,
   `HTTPS_PROXY`/`HTTP_PROXY` (if the environment requires a proxy)
 - `pp-kb.config.json` in the project root (see `pp-kb.config.example.json`)
 
+**First-time setup: follow [SETUP.md](SETUP.md)** — it walks through interpreter
+selection (asks the user which Python), credential checks, config, self-test and
+the first capture with known failure modes.
+
 ## Pipeline (run from project root, in this order)
+
+Use the configured interpreter for every invocation — read `pythonPath` from
+`pp-kb.config.json` (env `PP_PYTHON` overrides) and run `<PY> <script>`;
+never assume bare `python` is the right interpreter.
 
 ```bash
 S=.claude/skills/pp-kb-builder/scripts
+PY=<pythonPath from config>   # e.g. python | py -3.11 | C:/venvs/ppkb/Scripts/python.exe
 
 # capture (network, SPN via env vars)
-python $S/export_metadata.py        # Dataverse metadata -> kb/_raw/metadata/
-python $S/export_flows.py           # workflow clientdata -> kb/_raw/flows/
+$PY $S/export_metadata.py        # Dataverse metadata -> kb/_raw/metadata/
+$PY $S/export_flows.py           # workflow clientdata -> kb/_raw/flows/
 
 # render (offline, deterministic from kb/_raw/ + canvas sources)
-python $S/parse_metadata.py         # kb/dataverse/ (tables + ER diagram)
-python $S/parse_flows.py            # kb/flows/ (runAfter mermaid DAGs)
-python $S/parse_canvas.py           # kb/apps/ (two-tier screens, navigation graph)
-python $S/build_crossrefs.py        # kb/REFERENCES.md + Used-by rewrites
-python $S/build_index.py            # kb/CLAUDE.md + kb/SCOPE.md
+$PY $S/parse_metadata.py         # kb/dataverse/ (tables + ER diagram)
+$PY $S/parse_flows.py            # kb/flows/ (runAfter mermaid DAGs)
+$PY $S/parse_canvas.py           # kb/apps/ (two-tier screens, navigation graph)
+$PY $S/build_crossrefs.py        # kb/REFERENCES.md + Used-by rewrites
+$PY $S/build_index.py            # kb/CLAUDE.md + kb/SCOPE.md
 ```
 
 Each export step is network-bound and separate from parsing: raw JSON lands in

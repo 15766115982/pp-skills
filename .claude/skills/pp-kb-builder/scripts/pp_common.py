@@ -35,6 +35,7 @@ ENV_OVERRIDES = {
     "tenantId": "PP_TENANT_ID",
     "clientId": "PP_CLIENT_ID",
     "clientSecret": "PP_CLIENT_SECRET",
+    "pythonPath": "PP_PYTHON",
 }
 
 
@@ -67,6 +68,7 @@ def load_config(config_path: str | None = None) -> dict:
     cfg.setdefault("labelLanguage", 1033)
     cfg.setdefault("outputDir", "./kb")
     cfg.setdefault("canvasSourcePath", "./canvas-src")
+    cfg.setdefault("pythonPath", "python")  # interpreter used to run pipeline scripts
     cfg.setdefault("filters", {})
     cfg["_configPath"] = path
     return cfg
