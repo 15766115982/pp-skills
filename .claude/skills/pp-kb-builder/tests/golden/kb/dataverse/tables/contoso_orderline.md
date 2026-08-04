@@ -31,7 +31,8 @@
 
 ## Used by
 
-_(populated by build_crossrefs — phase 4)_
+- **Apps**: [SalesHub](../../apps/SalesHub/overview.md)
+- **Flows**: [Contoso Order Approval](../../flows/contoso-order-approval.md)
 
 ---
 *Snapshot: org12345.crm5.dynamics.com | 2026-08-04T09:31:00+00:00 | Raw: `_raw/metadata/`*

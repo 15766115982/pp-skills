@@ -14,20 +14,23 @@
 |---|---|---|---|
 | Daily_recurrence | `Recurrence` |  | {"recurrence": {"frequency": "Day", "interval": 1, "timeZone": "China Standard Time"}} |
 
-## Actions (2) & dependency graph
+## Actions (3) & dependency graph
 
 | Action | Type | Operation | runAfter | Branch |
 |---|---|---|---|---|
 | List_todays_orders | ApiConnection | ListRecords | — | — |
-| Send_digest | ApiConnection | SendEmailV2 | List_todays_orders | — |
+| Send_digest | ApiConnection | SendEmailV2 | List_open_invoices | — |
+| List_open_invoices | ApiConnection | ListRecords | List_todays_orders | — |
 
 ```mermaid
 flowchart TD
     TRIG(["Trigger: Daily_recurrence"])
     List_todays_orders["List_todays_orders<br/>ListRecords"]
     Send_digest["Send_digest<br/>SendEmailV2"]
+    List_open_invoices["List_open_invoices<br/>ListRecords"]
     TRIG --> List_todays_orders
-    List_todays_orders --> Send_digest
+    List_open_invoices --> Send_digest
+    List_todays_orders --> List_open_invoices
 ```
 
 ## Connectors used
@@ -38,7 +41,7 @@ flowchart TD
 
 ## Tables touched
 
-`contoso_salesorder`
+`contoso_invoiceline` · `contoso_salesorder`
 
 ---
 *Snapshot: org12345.crm5.dynamics.com | 2026-08-04T09:31:00+00:00 | Raw: `_raw/flows/` (clientdata sanitized)*

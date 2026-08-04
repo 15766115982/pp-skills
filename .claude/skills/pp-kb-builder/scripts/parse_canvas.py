@@ -180,6 +180,22 @@ def match_screens(names: list, patterns: list) -> set:
     return {n for n in names if any(fnmatch.fnmatchcase(n.lower(), p.lower()) for p in patterns)}
 
 
+def compute_screen_tiers(screens: dict, provenance: dict, patterns: list) -> tuple[set, dict]:
+    """(full_set, shallow_dict{name: reason}) — shared with build_index."""
+    matched = match_screens(list(screens), patterns)
+    full, shallow = set(), {}
+    for s in screens:
+        src_file = provenance.get(("Screens", s), "")
+        size = os.path.getsize(src_file) if src_file and os.path.exists(src_file) else 0
+        if s not in matched:
+            shallow[s] = "not matched by filters.screens"
+        elif size > LARGE_FILE_BYTES:
+            shallow[s] = f"large file ({size // 1000} KB > {LARGE_FILE_BYTES // 1000} KB)"
+        else:
+            full.add(s)
+    return full, shallow
+
+
 # ------------------------------------------------------------------ rendering
 
 def md_escape(text: str) -> str:
@@ -354,17 +370,7 @@ def main() -> None:
         footer = f"Snapshot: {app_name} | commit {commit} | schema v3.0 | Source: `{disp_path(src_dir)}` (read-only)"
 
         # two-tier decision
-        matched = match_screens(list(screens), screen_patterns)
-        full_screens, shallow = set(), {}
-        for s in screens:
-            src_file = provenance.get(("Screens", s), "")
-            size = os.path.getsize(src_file) if src_file and os.path.exists(src_file) else 0
-            if s not in matched:
-                shallow[s] = "not matched by filters.screens"
-            elif size > LARGE_FILE_BYTES:
-                shallow[s] = f"large file ({size // 1000} KB > {LARGE_FILE_BYTES // 1000} KB)"
-            else:
-                full_screens.add(s)
+        full_screens, shallow = compute_screen_tiers(screens, provenance, screen_patterns)
 
         app_dir = os.path.join(out_root, app_name)
         for s in sorted(full_screens):

@@ -28,25 +28,26 @@ and Canvas App sources (`.pa.yaml`, read-only from a local source tree).
   `HTTPS_PROXY`/`HTTP_PROXY` (if the environment requires a proxy)
 - `pp-kb.config.json` in the project root (see `pp-kb.config.example.json`)
 
-## Pipeline (run from project root)
+## Pipeline (run from project root, in this order)
 
 ```bash
-# phase 1 — Dataverse metadata (implemented)
-python .claude/skills/pp-kb-builder/scripts/export_metadata.py
-python .claude/skills/pp-kb-builder/scripts/parse_metadata.py
+S=.claude/skills/pp-kb-builder/scripts
 
-# phase 2 — Power Automate flows (implemented)
-python .claude/skills/pp-kb-builder/scripts/export_flows.py
-python .claude/skills/pp-kb-builder/scripts/parse_flows.py
+# capture (network, SPN via env vars)
+python $S/export_metadata.py        # Dataverse metadata -> kb/_raw/metadata/
+python $S/export_flows.py           # workflow clientdata -> kb/_raw/flows/
 
-# phase 3 — Canvas apps (implemented)
-python .claude/skills/pp-kb-builder/scripts/parse_canvas.py
-
-# phase 4 — cross references + index (build_crossrefs.py, build_index.py) [planned]
+# render (offline, deterministic from kb/_raw/ + canvas sources)
+python $S/parse_metadata.py         # kb/dataverse/ (tables + ER diagram)
+python $S/parse_flows.py            # kb/flows/ (runAfter mermaid DAGs)
+python $S/parse_canvas.py           # kb/apps/ (two-tier screens, navigation graph)
+python $S/build_crossrefs.py        # kb/REFERENCES.md + Used-by rewrites
+python $S/build_index.py            # kb/CLAUDE.md + kb/SCOPE.md
 ```
 
 Each export step is network-bound and separate from parsing: raw JSON lands in
 `kb/_raw/` (sanitized), and parsers rebuild the docs deterministically from it.
+Any subset can be re-run (e.g. flows only); always finish with build_index.py.
 
 ## Filters (config "filters")
 

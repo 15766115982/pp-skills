@@ -24,6 +24,7 @@ import export_metadata as em  # noqa: E402
 import export_flows as ef  # noqa: E402
 import parse_flows as pf  # noqa: E402
 import parse_canvas as pc  # noqa: E402
+import build_crossrefs as bx  # noqa: E402
 
 CANVAS_FIXTURE = os.path.join(FIXTURES, "canvas-src")
 
@@ -106,6 +107,7 @@ class TestGoldenFiles(unittest.TestCase):
     """Rebuild kb/dataverse from fixtures; must byte-match tests/golden/kb/dataverse."""
 
     def test_rebuild_matches_golden(self):
+        """Full 5-script pipeline rebuild must byte-match tests/golden/kb."""
         with tempfile.TemporaryDirectory(dir=os.path.dirname(FIXTURES)) as tmp:
             kb = os.path.join(tmp, "kb")
             shutil.copytree(os.path.join(FIXTURES, "_raw"), os.path.join(kb, "_raw"))
@@ -114,15 +116,17 @@ class TestGoldenFiles(unittest.TestCase):
                 json.dump({"outputDir": kb, "labelLanguage": 1033,
                            "canvasSourcePath": CANVAS_FIXTURE,
                            "filters": {"screens": ["Order*"]}}, f)
-            for script in ("parse_metadata.py", "parse_flows.py", "parse_canvas.py"):
+            for script in ("parse_metadata.py", "parse_flows.py", "parse_canvas.py",
+                           "build_crossrefs.py", "build_index.py"):
                 env = dict(os.environ, PP_CANVAS_COMMIT="testcommit")
                 r = subprocess.run(
                     [sys.executable, os.path.join(SCRIPTS, script), "--config", cfg_path],
                     capture_output=True, text=True, cwd=SKILL_DIR, env=env)
                 self.assertEqual(r.returncode, 0, msg=f"{script}: {r.stderr}")
-            for sub in ("dataverse", "flows", "apps"):
-                diffs = dircmp_exact(os.path.join(kb, sub), os.path.join(GOLDEN, "kb", sub))
-                self.assertEqual(diffs, [], msg=f"{sub}:\n" + "\n".join(diffs))
+            diffs = dircmp_exact(kb, os.path.join(GOLDEN, "kb"))
+            diffs = [d for d in diffs if not d.startswith("only in") or "_raw" not in d]
+            diffs = [d for d in diffs if "_raw" not in d]
+            self.assertEqual(diffs, [], msg="\n".join(diffs))
 
     def test_rebuild_is_idempotent(self):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(FIXTURES)) as tmp:
@@ -261,6 +265,55 @@ class TestCanvas(unittest.TestCase):
         self.assertEqual(pc.match_screens(names, ["Order*"]),
                          {"OrderListScreen", "OrderDetailScreen"})
         self.assertEqual(pc.match_screens(names, []), set(names))  # no filter = all full
+
+
+class TestCrossrefs(unittest.TestCase):
+    def _kb_tables(self):
+        return bx.load_kb_tables(os.path.join(FIXTURES, "_raw", "metadata"))
+
+    def test_resolve_table_three_channels(self):
+        kb = self._kb_tables()
+        self.assertEqual(bx.resolve_table("contoso_salesorder", kb), "contoso_salesorder")   # logical
+        self.assertEqual(bx.resolve_table("contoso_salesorders", kb), "contoso_salesorder")  # entity set
+        self.assertEqual(bx.resolve_table("Sales Order", kb), "contoso_salesorder")          # display
+        self.assertIsNone(bx.resolve_table("contoso_invoiceline", kb))                       # external
+
+    def test_external_boundary_detection(self):
+        kb = self._kb_tables()
+        flows, ext = bx.collect_flow_refs(os.path.join(FIXTURES, "_raw", "flows"), kb)
+        self.assertIn("contoso_invoiceline", ext)
+        digest = flows["Daily Order Digest"]["tables"]
+        self.assertIn("contoso_salesorder", digest)
+        self.assertTrue(any(t.endswith(bx.EXTERNAL) for t in digest))
+
+    def test_app_table_and_connector_refs(self):
+        kb = self._kb_tables()
+        cfg = {"canvasSourcePath": CANVAS_FIXTURE}
+        apps, ext = bx.collect_app_refs(cfg, kb)
+        self.assertEqual(set(apps["SalesHub"]["tables"]),
+                         {"contoso_orderline", "contoso_salesorder"})
+        self.assertIn("shared_office365", apps["SalesHub"]["connectors"])
+        self.assertEqual(ext, set())
+
+    def test_used_by_rewrite(self):
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(FIXTURES)) as tmp:
+            kb = os.path.join(tmp, "kb")
+            shutil.copytree(os.path.join(FIXTURES, "_raw"), os.path.join(kb, "_raw"))
+            tdir = os.path.join(kb, "dataverse", "tables")
+            os.makedirs(tdir)
+            doc = "# Table: contoso_salesorder (Sales Order)\n\n## Used by\n\n_(populated by build_crossrefs — phase 4)_\n\n---\n*Snapshot: x*\n"
+            with open(os.path.join(tdir, "contoso_salesorder.md"), "w", encoding="utf-8") as f:
+                f.write(doc)
+            kb_tables = self._kb_tables()
+            apps, _ = bx.collect_app_refs({"canvasSourcePath": CANVAS_FIXTURE}, kb_tables)
+            flows, _ = bx.collect_flow_refs(os.path.join(FIXTURES, "_raw", "flows"), kb_tables)
+            bx.rewrite_used_by(kb, apps, flows, kb_tables)
+            with open(os.path.join(tdir, "contoso_salesorder.md"), encoding="utf-8") as f:
+                text = f.read()
+            self.assertIn("[SalesHub](../../apps/SalesHub/overview.md)", text)
+            self.assertIn("[Daily Order Digest](../../flows/daily-order-digest.md)", text)
+            self.assertNotIn("phase 4", text)
+            self.assertTrue(text.endswith("*Snapshot: x*\n"))
 
 
 if __name__ == "__main__":
